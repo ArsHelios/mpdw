@@ -19,10 +19,12 @@ library('ggplot2')
 library("nortest")
 library("car")
 ```
+
+
 ```{r}
-install.packages("aTSA")
+install.packages("aTSA, repos = https://cran.rstudio.com/")
 ```
 ```{r}
-install.packages("tsibble")
+install.packages("tsibble, repos = https://cran.rstudio.com/")
 ```
 
