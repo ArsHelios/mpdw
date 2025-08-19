@@ -6,18 +6,23 @@ x
 ```
 
 ```{r}
-install.packages("forecast")
-install.packages("TSA")
-install.packages('eTSA')
-install.packages("graphics")
-install.packages("TTR")
-install.packages("lmtest")
-install.packages("MASS")
-install.packages("MLmetrics")
-install.packages("dplyr")
-install.packages("tseries")
-install.packages('ggplot2')
-install.packages("nortest")
-
+library("forecast")
+library("TSA")
+library("graphics")
+library("TTR")
+library("lmtest")
+library("MASS")
+library("MLmetrics")
+library("dplyr")
+library("tseries")
+library('ggplot2')
+library("nortest")
+library("car")
+```
+```{r}
+install.packages("aTSA")
+```
+```{r}
+install.packages("tsibble")
 ```
 
