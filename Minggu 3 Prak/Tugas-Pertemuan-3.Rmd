@@ -1,0 +1,101 @@
+---
+title: "MPDW K2"
+author: "G1401231072 - Aurisa Putri Hawin Yusima"
+date: "2025-08-29"
+output: html_document
+---
+
+```{r}
+library(readxl)
+library(lmtest)
+library(devtools)
+```
+
+
+```{r}
+file_path <- "E:/Kuliah/MPDW/Data/IPM SRAGEN 2010-2024.xlsx"
+data_ipm <- read_excel(file_path, sheet = 2)
+```
+
+```{r}
+print("Data Awal:")
+print(head(data_ipm))
+print("Struktur Data:")
+str(data_ipm)
+```
+```{r}
+model_ipm <- lm(IPM ~ Periode, data = data_ipm)
+```
+
+```{r}
+summary(model_ipm)
+```
+
+```{r}
+ipm_ts <- ts(data_ipm$IPM, start = 1, frequency = 1)
+```
+
+```{r}
+par(mfrow = c(1, 2))
+```
+
+```{r}
+acf(ipm_ts, main = "Plot ACF Data IPM Sragen")
+pacf(ipm_ts, main = "Plot PACF Data IPM Sragen")
+```
+```{r}
+dwtest(model_ipm)
+```
+
+Interpretasi: Terdapat autokorelasi positif pada data, ditunjukan oleh nilai signifikan di lag 1, 2, dan 3 dalam plot ACF. Ditemukan pula indikasi autokorelasi di lag 1 dalam plot PACF. Hasil uji DUrbin Watson juga mneunjukkan adanya autokorelaso (0.53293 < 2). Metode Cochrane-Orcutt dan Hildreth Lu akan digunakan untuk menangani autokorelasi berikut.
+
+```{r}
+devtools::install_github("cran/orcutt")
+```
+
+```{r}
+library(orcutt)
+```
+
+```{r}
+co_ipm <- cochrane.orcutt(model_ipm)
+summary(co_ipm)
+```
+
+```{r}
+sse_co <- sum(resid(co_ipm)^2)
+cat("SSE Cochrane-Orcutt =", sse_co, "\n")
+```
+
+```{r}
+hildreth_lu <- function(model, rho_range = seq(-0.9, 0.9, by=0.01)) {
+  X <- model.matrix(model)
+  y <- model.response(model.frame(model))
+  SSR <- numeric(length(rho_range))
+  
+  for (i in 1:length(rho_range)) {
+    rho <- rho_range[i]
+    y_star <- y[-1] - rho * y[-length(y)]
+    X_star <- X[-1, ] - rho * X[-length(y), ]
+    hl_model <- lm(y_star ~ X_star - 1)
+    SSR[i] <- sum(resid(hl_model)^2)
+  }
+  
+  best_rho <- rho_range[which.min(SSR)]
+  y_star <- y[-1] - best_rho * y[-length(y)]
+  X_star <- X[-1, ] - best_rho * X[-length(y), ]
+  final_model <- lm(y_star ~ X_star - 1)
+  
+  list(rho = best_rho, model = final_model, sse = min(SSR))
+}
+```
+
+```{r}
+hl_result <- hildreth_lu(model_ipm)
+
+cat("Hildreth-Lu rho =", hl_result$rho, "\n")
+summary(hl_result$model)
+cat("SSE Hildreth-Lu =", hl_result$sse, "\n")
+```
+### Kesimpulan
+Berdasarkan skor SSE, metode Hildreth Lu lebih baik dibandingkan dengan metode Cochrane Orcutt. Hal ini dikarenakan metode Hildreth Lu mencari nilai koefisien autokorelasi (ρ) yang meminimalkan jumlah kuadrat galat (SSE) melalui grid search. Sebaliknya, metode Cochrane Orcutt menggunakan pendekatan iteratif yang memperkirakan ρ secara bertahap. Kelemahan dari pendekatan ini adalah estimasi dapat berhenti pada solusi lokal atau kurang optimal, terutama jika data memiliki autokorelasi yang kuat dan konsisten.
