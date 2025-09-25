@@ -1,0 +1,419 @@
+---
+title: "Latihan Pertemuan 4 Prak"
+author: "G1401231072 - Aurisa Putri Hawin Yusima"
+date: "2025-09-25"
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+    toc: yes
+---
+
+# Proses MA (2)
+```{r}
+library(TSA)
+```
+
+```{r}
+set.seed(1072)
+```
+
+## Pembangkitan Model
+```{r}
+n_data <- 300
+theta1 <- 0.4
+theta2 <- 0.6
+mean_ma <- 0
+sd_noise <- 1
+```
+
+### arima.sim
+```{r}
+ma2_sim <- arima.sim(model = list(ma = c(theta1, theta2)), n = n_data, mean = mean_ma, sd = sd_noise)
+```
+
+### Manual
+```{r}
+epsilon <- rnorm(n_data + 2, mean = mean_ma, sd = sd_noise) # Perlu 2 data awal
+ma2_manual <- numeric(n_data)
+for (t in 1:n_data) {
+  ma2_manual[t] <- epsilon[t + 2] + theta1 * epsilon[t + 1] + theta2 * epsilon[t]
+}
+ma2_manual <- ts(ma2_manual)
+```
+
+## Plot Time Series
+```{r}
+par(mfrow = c(2, 2))
+
+plot(ma2_sim, main = "Plot Time Series MA(2)", ylab = "Yt", xlab = "Waktu")
+abline(h = 0, col = "red", lty = 2)
+
+acf(ma2_sim, main = "Plot ACF", lag.max = 20)
+
+pacf(ma2_sim, main = "Plot PACF", lag.max = 20)
+
+eacf(ma2_sim)
+
+par(mfrow = c(1, 1))
+```
+Interpretasi:
+- Grafik time series menunjukkan fluktuasi di sekitar nilai 0 yang berarti data stasioner
+- Plot ACF signifikan pada lag 1 dan 2
+- Plot PACF menunjukkan pola tails off
+- Plot EACF menunjukkan model AR ordo 0 dan MA ordo 2
+
+## Scatterplot
+```{r}
+par(mfrow = c(1, 3))
+
+# Yt vs Yt-1
+plot(y = ma2_sim, x = lag(ma2_sim, -1), main = "Yt vs Yt-1", xlab = "Yt-1", ylab = "Yt")
+
+# Yt vs Yt-2
+plot(y = ma2_sim, x = lag(ma2_sim, -2), main = "Yt vs Yt-2", xlab = "Yt-2", ylab = "Yt")
+
+# Yt vs Yt-3
+plot(y = ma2_sim, x = lag(ma2_sim, -3), main = "Yt vs Yt-3", xlab = "Yt-3", ylab = "Yt")
+
+par(mfrow = c(1, 1))
+```
+Interpretasi:
+- Plot Yt vs Yt-1 dan YT cs YT-2 menunjukkan adanya pola hubungan lemah
+- Plot YT vs YT-3 menunjukkan tidak adanya korelasi
+
+## Autokorelasi
+
+### Autokorelasi Data Bangkitan
+```{r}
+sample_acf <- acf(ma2_sim, plot = FALSE, lag.max = 5)
+print("Autokorelasi dari Data Bangkitan:")
+print(sample_acf$acf)
+```
+
+### Autokorelasi Teoritis
+```{r}
+gamma0 <- (1 + theta1^2 + theta2^2) * sd_noise^2
+gamma1 <- (theta1 + theta1 * theta2) * sd_noise^2
+gamma2 <- theta2 * sd_noise^2
+
+rho1_teoritis <- gamma1 / gamma0
+rho2_teoritis <- gamma2 / gamma0
+rho3_teoritis <- 0
+
+print("Autokorelasi Teoritis:")
+cat(sprintf("Rho(1) = %.4f\n", rho1_teoritis))
+cat(sprintf("Rho(2) = %.4f\n", rho2_teoritis))
+cat(sprintf("Rho(3) = %.4f\n", rho3_teoritis))
+```
+
+# Proses AR(2)
+
+Cek kestasioneran model
+$\phi\_1 + \phi\_2 = 0.5 + 0.2 = 0.7 < 1$
+$\phi\_2 - \phi\_1 = 0.2 - 0.5 = -0.3 < 1$
+$|\phi\_2| = |0.2| < 1$
+
+Terbukti semua model stasioner
+
+```{r}
+library(TSA)
+```
+
+```{r}
+set.seed(1072)
+```
+
+## Pembangkitan Model
+```{r}
+n_data <- 300
+phi1 <- 0.5
+phi2 <- 0.2
+mean_ar <- 0
+```
+
+### arima.sim
+```{r}
+ar2_sim <- arima.sim(model = list(ar = c(phi1, phi2)), n = n_data, mean = mean_ar)
+```
+
+### Manual
+```{r}
+burn_in <- 100 
+n_total <- n_data + burn_in
+epsilon <- rnorm(n_total, mean = 0, sd = 1)
+ar2_manual <- numeric(n_total)
+
+# Y1 dan Y2
+ar2_manual[1] <- epsilon[1]
+ar2_manual[2] <- phi1 * ar2_manual[1] + epsilon[2]
+
+for (t in 3:n_total) {
+  ar2_manual[t] <- phi1 * ar2_manual[t - 1] + phi2 * ar2_manual[t - 2] + epsilon[t]
+}
+
+ar2_manual_final <- ts(ar2_manual[(burn_in + 1):n_total])
+
+```
+
+## Plot Time Series, ACF, PACF, EACF
+```{r}
+par(mfrow = c(2, 2))
+
+plot(ar2_sim, main = "Plot Time Series AR(2)", ylab = "Yt", xlab = "Waktu")
+abline(h = 0, col = "red", lty = 2)
+
+acf(ar2_sim, main = "Plot ACF", lag.max = 20)
+
+pacf(ar2_sim, main = "Plot PACF", lag.max = 20)
+
+eacf(ar2_sim)
+
+par(mfrow = c(1, 1))
+```
+Interpretasi: 
+- Plot time series menunjukkan data fluktuasi di sekitar 0 yang berarti data stasioner
+- Plot ACF menunjukkan tails off
+- Plot PACF signifikan pada lag 1 dan 2
+- PlotEACF menunjukkan AR ordo 2 dan MA ordo 0
+
+## Scatterplot
+```{r}
+par(mfrow = c(1, 3))
+
+# Yt vs Yt-1
+plot(y = ar2_sim, x = lag(ar2_sim, -1), main = "Yt vs Yt-1", xlab = "Yt-1", ylab = "Yt")
+
+# Yt vs Yt-2
+plot(y = ar2_sim, x = lag(ar2_sim, -2), main = "Yt vs Yt-2", xlab = "Yt-2", ylab = "Yt")
+
+# Yt vs Yt-3
+plot(y = ar2_sim, x = lag(ar2_sim, -3), main = "Yt vs Yt-3", xlab = "Yt-3", ylab = "Yt")
+
+par(mfrow = c(1, 1))
+```
+Interpretasi:
+- Plot Yt vs Yt-1 dan Yt vs Yt-2 menunjukkan pola hubungan linier positif yang melemah di plot Yt vs Yt-3
+
+## Autokorelasi
+
+### Autokorelasi Data Bangkitan
+```{r}
+sample_acf2 <- acf(ar2_sim, plot = FALSE, lag.max = 5)
+print("Autokorelasi dari Data Bangkitan:")
+print(sample_acf2$acf)
+```
+
+### Autokorelasi Teoritis
+```{r}
+rho_teoritis <- numeric(5)
+rho_teoritis[1] <- phi1 / (1 - phi2)
+rho_teoritis[2] <- phi1 * rho_teoritis[1] + phi2
+rho_teoritis[3] <- phi1 * rho_teoritis[2] + phi2 * rho_teoritis[1]
+rho_teoritis[4] <- phi1 * rho_teoritis[3] + phi2 * rho_teoritis[2]
+rho_teoritis[5] <- phi1 * rho_teoritis[4] + phi2 * rho_teoritis[3]
+
+print("Autokorelasi Teoritis:")
+print(rho_teoritis)
+```
+
+
+# Proses ARMA (2,2)
+
+Cek kestasioneran dan invertibilitas
+```{r}
+check_roots <- function(coeffs, type = "AR") {
+  if (type == "AR") {
+    poly_coeffs <- c(1, -coeffs) 
+  } else if (type == "MA") {
+    poly_coeffs <- c(1, coeffs)
+  } else {
+    stop("Tipe model tidak valid. Gunakan 'AR' atau 'MA'.")
+  }
+  
+  roots <- polyroot(poly_coeffs)
+  mod_roots <- Mod(roots)
+  
+  cat("Akar-akar Polinom:\n")
+  print(roots)
+  cat("\n Modulus dari Akar-akar:\n")
+  print(mod_roots)
+  
+  if (all(mod_roots > 1)) {
+    cat(sprintf("\n Semua akar berada di luar lingkaran satuan. Syarat TERPENUHI.\n"))
+  } else {
+    cat(sprintf("\n Ada akar di dalam atau pada lingkaran satuan. Syarat TIDAK TERPENUHI.\n"))
+  }
+}
+```
+ 
+Cek stasioner
+```{r}
+phi <- c(0.5, 0.2)
+
+check_roots(coeffs = phi, type = "AR")
+```
+
+Cek invertibilitas
+```{r}
+theta <- c(0.4, 0.6)
+
+check_roots(coeffs = theta, type = "MA")
+```
+
+```{r}
+library(TSA)
+```
+
+```{r}
+set.seed(1072)
+```
+
+## Pembangkitan Model
+```{r}
+n_data <- 300
+ar_params <- c(0.5, 0.2)  
+ma_params <- c(0.4, 0.6)
+```
+
+## Data Bangkitan
+
+### arima.sim
+```{r}
+arma22_sim <- arima.sim(model = list(ar = ar_params, ma = ma_params), n = n_data)
+```
+
+### Manual
+```{r}
+burn_in <- 100
+n_total <- n_data + burn_in
+
+epsilon_arma <- rnorm(n_total)
+arma22_manual <- numeric(n_total)
+
+for (t in 3:n_total) {
+  arma22_manual[t] <- (phi1 * arma22_manual[t - 1]) + 
+                      (phi2 * arma22_manual[t - 2]) + 
+                      epsilon_arma[t] + 
+                      (theta1 * epsilon_arma[t - 1]) + 
+                      (theta2 * epsilon_arma[t - 2])
+}
+
+arma22_manual_final <- ts(arma22_manual[(burn_in + 1):n_total])
+```
+
+## Plot Time Series, ACF, PACF, EACF
+```{r}
+par(mfrow = c(2, 2))
+
+# Plot Time Series
+plot(arma22_sim, main = "Plot Time Series ARMA(2,2)", ylab = "Yt", xlab = "Waktu")
+abline(h = 0, col = "red", lty = 2)
+
+# Plot ACF
+acf(arma22_sim, main = "Plot ACF", lag.max = 20)
+
+# Plot PACF
+pacf(arma22_sim, main = "Plot PACF", lag.max = 20)
+
+# Plot EACF
+eacf(arma22_sim)
+
+# Mengembalikan layout plot ke default
+par(mfrow = c(1, 1))
+```
+Interpretasi:
+- Plot EACF menunjukkan model AR 2 dan MA 2 (ARMA 2,2)
+
+## Scatterplot
+```{r}
+par(mfrow = c(1, 3))
+
+# Yt vs Yt-1
+plot(y = arma22_sim, x = lag(arma22_sim, -1), main = "Yt vs Yt-1", xlab = "Yt-1", ylab = "Yt")
+
+# Yt vs Yt-2
+plot(y = arma22_sim, x = lag(arma22_sim, -2), main = "Yt vs Yt-2", xlab = "Yt-2", ylab = "Yt")
+
+# Yt vs Yt-3
+plot(y = arma22_sim, x = lag(arma22_sim, -3), main = "Yt vs Yt-3", xlab = "Yt-3", ylab = "Yt")
+
+par(mfrow = c(1, 1))
+
+```
+Interpretasi: 
+- Plot menunjukkan hubungan linier kuat pada lag 1 dan lag 2, kemudian melemah di lag 3
+
+## Autokorelasi
+
+### Data Bangkitan
+```{r}
+sample_acf3 <- acf(arma22_sim, plot = FALSE, lag.max = 5)
+print("Autokorelasi dari Data Bangkitan:")
+print(sample_acf3$acf)
+```
+
+### Teoritis
+```{r}
+phi    <- c(0.5, 0.2)
+theta  <- c(0.4, 0.6)
+sigma2 <- 1
+
+psi <- numeric(2)
+psi[1] <- phi[1] + theta[1]
+psi[2] <- theta[2] + phi[1] * psi[1] + phi[2]
+
+cat("Langkah 1: Menghitung Bobot Psi\n")
+cat(sprintf("psi_1 = %.2f\n", psi[1]))
+cat(sprintf("psi_2 = %.2f\n\n", psi[2]))
+```
+
+```{r}
+A <- matrix(c(
+  1,      -phi[1],         -phi[2],
+  -phi[1], (1 - phi[2]),    0,
+  -phi[2], -phi[1],         1
+), nrow = 3, byrow = TRUE)
+
+b <- c(
+  sigma2 * (1 + theta[1] * psi[1] + theta[2] * psi[2]), 
+  sigma2 * (theta[1] + theta[2] * psi[1]),            
+  sigma2 * theta[2]                                    
+)
+
+cat("Langkah 2: Sistem Persamaan Linear\n")
+cat("Matriks A:\n")
+print(A)
+cat("\nVektor b:\n")
+print(b)
+```
+
+```{r}
+gamma_solusi <- solve(A, b)
+
+cat("\nLangkah 3: Solusi Autokovarians\n")
+cat(sprintf("gamma_0 = %.5f\n", gamma_solusi[1]))
+cat(sprintf("gamma_1 = %.5f\n", gamma_solusi[2]))
+cat(sprintf("gamma_2 = %.5f\n\n", gamma_solusi[3]))
+```
+
+```{r}
+jumlah_lag_total <- 10
+rho <- numeric(jumlah_lag_total + 1) 
+
+rho[1] <- 1 
+
+rho[2] <- gamma_solusi[2] / gamma_solusi[1] 
+rho[3] <- gamma_solusi[3] / gamma_solusi[1] 
+
+for (k in 4:(jumlah_lag_total + 1)) {
+  rho[k] <- phi[1] * rho[k - 1] + phi[2] * rho[k - 2]
+}
+
+cat("Langkah 4: Hasil Akhir Autokorelasi Teoritis\n")
+hasil_akhir <- data.frame(
+  Lag = 0:jumlah_lag_total,
+  Rho_Manual_R = rho
+)
+print(hasil_akhir, row.names = FALSE)
+```
+
