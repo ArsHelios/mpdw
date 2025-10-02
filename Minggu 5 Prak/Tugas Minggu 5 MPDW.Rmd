@@ -38,6 +38,10 @@ oil_price <- read_excel("E:/Kuliah/MPDW/Data/Crude Oil Price Data 1-127.xlsx")
 ```
 
 ```{r}
+oil_price <- oil_price[1:102, ]
+```
+
+```{r}
 oil_price <- oil_price %>%
   as_tsibble(index = Period)
 ```
@@ -74,10 +78,10 @@ Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut tails off.
 ```{r}
 adf.test(oil_price$Price)
 ```
-Berdasarkan uji ADF tersebut, didapat p-value sebesar 0.4891 yang lebih besar dari taraf nyata 5% sehingga menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot deret waktu dan plot ACF.
+Berdasarkan uji ADF tersebut, didapat p-value sebesar 0.5035 yang lebih besar dari taraf nyata 5% sehingga menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot deret waktu dan plot ACF.
 
 ```{r}
-index <- seq(1:127)
+index <- seq(1:102)
 
 # Box-Cox
 bc <- boxcox(
@@ -101,7 +105,7 @@ ci_upper <- max(ci_lambda)
 
 c(Batas_Bawah = ci_lower, Batas_Atas = ci_upper)
 ```
-Gambar di atas menunjukkan nilai λ optimum (rounded value) sebesar 0.46 dan selang kepercayaan 95% nilai memiliki batas bawah -0,13 dan batas atas 1,06. Selang tersebut memuat nilai 1 sehingga dapat dikatakan bahwa data bangkitan stasioner dalam ragam.
+Gambar di atas menunjukkan nilai λ optimum (rounded value) sebesar 0.57 dan selang kepercayaan 95% nilai memiliki batas bawah -0,07 dan batas atas 1,23. Selang tersebut memuat nilai 1 sehingga dapat dikatakan bahwa data bangkitan stasioner dalam ragam.
 
 ## Differencing
 ```{r}
