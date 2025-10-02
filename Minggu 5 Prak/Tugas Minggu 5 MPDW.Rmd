@@ -1,0 +1,124 @@
+---
+title: "MPDW Tugs Prak 6"
+author: "G1401231072 - Aurisa Putri Hawin Yusima"
+date: "2025-10-02"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    toc: yes
+---
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+library(tsibble)
+```
+
+```{r}
+library(tseries)
+```
+
+```{r}
+library(MASS)
+```
+
+```{r}
+library(readxl)
+```
+
+```{r}
+set.seed(1072)
+```
+
+## Data
+```{r}
+oil_price <- read_excel("E:/Kuliah/MPDW/Data/Crude Oil Price Data 1-127.xlsx")
+```
+
+```{r}
+oil_price <- oil_price %>%
+  as_tsibble(index = Period)
+```
+
+```{r}
+oil_price
+```
+
+## Cek Stasioneritas dalam Rataan dan Ragam
+```{r}
+plot_oil <- ggplot(oil_price, aes(x = Period, y = Price)) + 
+  geom_line() + 
+  theme_bw() +
+  xlab("Period") + 
+  ylab("Harga Crude Oil")
+
+plot_oil
+```
+
+```{r}
+mean(oil_price$Price)
+```
+
+```{r}
+lattice::densityplot(as.vector(oil_price$Price))
+```
+Plot deret waktu di atas menunjukkan bahwa data tidak stasioner dalam rataan, ditandai dengan adanya 2 puncak (bimodal) dalam persebaran data.
+
+```{r}
+acf(oil_price$Price)
+```
+Berdasarkan plot ACF, terlihat bahwa plot ACF pada data tersebut tails off.
+
+```{r}
+adf.test(oil_price$Price)
+```
+Berdasarkan uji ADF tersebut, didapat p-value sebesar 0.4891 yang lebih besar dari taraf nyata 5% sehingga menandakan bahwa data tidak stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot deret waktu dan plot ACF.
+
+```{r}
+index <- seq(1:127)
+
+# Box-Cox
+bc <- boxcox(
+  oil_price$Price ~ index,
+  lambda = seq(-1, 4, by = 0.01)
+)
+```
+
+```{r}
+lambda <- bc$x[which.max(bc$y)]
+lambda
+```
+
+```{r}
+# Selang kepercayaan 95% untuk lambda
+ci_lambda <- bc$x[bc$y > max(bc$y) - 0.5 * qchisq(0.95, 1)]
+
+# Batas bawah dan batas atas
+ci_lower <- min(ci_lambda)
+ci_upper <- max(ci_lambda)
+
+c(Batas_Bawah = ci_lower, Batas_Atas = ci_upper)
+```
+Gambar di atas menunjukkan nilai λ optimum (rounded value) sebesar 0.46 dan selang kepercayaan 95% nilai memiliki batas bawah -0,13 dan batas atas 1,06. Selang tersebut memuat nilai 1 sehingga dapat dikatakan bahwa data bangkitan stasioner dalam ragam.
+
+## Differencing
+```{r}
+oil_diff1 <- diff(oil_price$Price, differences = 1)
+
+# Plot hasil differencing
+ts.plot(oil_diff1,
+        main = "First-order Differencing dari Oil_Price",
+        col = "blue", lwd = 2)
+```
+
+```{r}
+acf(oil_diff1)
+```
+
+```{r}
+adf.test(oil_diff1)
+```
+Berdasarkan uji ADF tersebut, didapat p-value sebesar 0.01 yang lebih kecil dari taraf nyata 5% sehingga menandakan bahwa data sudah stasioner dalam rataan. Hal ini sesuai dengan hasil eksplorasi menggunakan plot time series dan plot ACF.
+
